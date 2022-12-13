@@ -36,6 +36,13 @@ license that can be found in the LICENSE file.
             <div class="form-control">
                 <input type="file" accept="image/png" id="src-file" multiple onchange="hideDownloadLink()">
             </div>
+            <div class="image-container"></div>
+            <div>
+                Delay: <input type="text" value="0" id="transition-delay">
+            </div>
+            <div>
+                Resize: <input type="text" value="" id="new-size"> px
+            </div>
         </div>
         <div class="row">
             <label>2. Generate Animated files</label>
@@ -49,11 +56,11 @@ license that can be found in the LICENSE file.
                 <a href="#" id="download-zip" download="archive.zip">zip file</a>
             </div>
             <div>
-                Gif File
+                Gif File (<span id="generated-gif-size"></span> KB)
                 <img id="generated-gif" src="#" alt="animated gif" />
             </div>
             <div>
-                Png File
+                Png File (<span id="generated-apng-size"></span> KB)
                 <img id="generated-apng" src="#" alt="animated apng" />
             </div>
         </div>
@@ -86,6 +93,8 @@ license that can be found in the LICENSE file.
 
         function onClickArchiveButton() {
             try {
+                const transitionDelay = document.getElementById('transition-delay').value;
+                const newSize = document.getElementById('new-size').value;
                 const srcFile = document.getElementById('src-file');
                 const promises = Array.from(srcFile.files).map((file) => {
                     return new Promise((resolve, _) => {
@@ -102,7 +111,7 @@ license that can be found in the LICENSE file.
                 });
                 Promise.all(promises).then((data) => {
                     // console.info({ data });
-                    createStamp(...data);
+                    createStamp(transitionDelay, newSize, ...data);
                     showDownloadLink();
                 });
             } finally {
@@ -118,7 +127,26 @@ license that can be found in the LICENSE file.
             document.getElementById('download-link').style = undefined;
         }
 
-        function hideDownloadLink() {
+        async function hideDownloadLink() {
+            const srcFile = document.getElementById('src-file');
+            if (srcFile.files === 0) {
+                return;
+            }
+            const promises = Array.from(srcFile.files).map((file) => {
+                return new Promise((resolve, _) => {
+                    const reader = new FileReader();
+                    reader.addEventListener('load', () => {
+                        resolve({
+                            fileName: file.name,
+                            lastModified: file.lastModified,
+                            base64: reader.result.split('base64,')[1]
+                        });
+                    });
+                    reader.readAsDataURL(file);
+                });
+            });
+            const fileData = await Promise.all(promises);
+            console.log(fileData);
             document.getElementById('download-link').style.display = 'none';
         }
     </script>
